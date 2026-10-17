@@ -51,7 +51,7 @@ const server=http.createServer(async(req,res)=>{
   let url;
   try {url=new URL(req.url,'http://localhost');}catch{res.writeHead(400);res.end();return;}
   if(url.pathname==='/health'){res.writeHead(200,{'Content-Type':'application/json'});res.end('{"ok":true}');return;}
-  const files={'/':'index.html','/app.js':'app.js','/speech.js':'speech.js','/style.css':'style.css','/manifest.webmanifest':'manifest.webmanifest','/icon.svg':'icon.svg'};
+  const files={'/':'index.html','/app.js':'app.js','/speech.js':'speech.js','/hand.js':'hand.js','/style.css':'style.css','/manifest.webmanifest':'manifest.webmanifest','/icon.svg':'icon.svg'};
   const file=files[url.pathname]||(/^\/tiles\/(?:[0-9]|[12][0-9]|3[0-3])\.svg$/.test(url.pathname)?url.pathname.slice(1):null);if(!file){res.writeHead(404);res.end('Not found');return;}
   try{const body=await readFile(path.join(root,file));res.writeHead(200,{'Content-Type':types[path.extname(file)],'Cache-Control':'no-cache','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Content-Security-Policy':"default-src 'self'; connect-src 'self' ws: wss:; img-src 'self' data:; style-src 'self'; script-src 'self'; frame-ancestors 'none'"});res.end(body);}
   catch{res.writeHead(500);res.end('Server error');}
