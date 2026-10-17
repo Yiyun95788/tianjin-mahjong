@@ -1,0 +1,4 @@
+{$DOMAIN} {
+    encode gzip zstd
+    reverse_proxy game:3000
+}
