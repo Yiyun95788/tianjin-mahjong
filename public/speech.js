@@ -1,8 +1,8 @@
 const numbers=['一','二','三','四','五','六','七','八','九'];
 export const spokenTile=t=>t<27?`${numbers[t%9]}${['万','筒','条'][Math.floor(t/9)]}`:['东风','南风','西风','北风','红中','发财','白板'][t-27];
-export function announcement(event,seat) {
+export function announcement(event,players=[]) {
   if(event.type==='drawGame')return '荒牌，这一局结束。';
-  const who=['您','下家','对家','上家'][(event.seat-seat+4)%4];
+  const who=players[event.seat]?.name?.replace(/^电脑·/,'')||['家人','小津','家人','海河'][event.seat]||'家人';
   const move={discard:'打出',pong:'碰',kong:'明杠',hiddenKong:'暗杠',addedKong:'补杠',win:'胡牌了'}[event.type];
   return move?`${who}，${move}${event.tile===undefined?'':spokenTile(event.tile)}。`:'';
 }

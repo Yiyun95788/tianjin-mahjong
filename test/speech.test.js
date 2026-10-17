@@ -4,10 +4,13 @@ import {NarrationGate} from '../src/pacing.js';
 import {Narrator,EventCursor,announcement,spokenTile} from '../public/speech.js';
 
 test('announcements identify every seat and public move without private draw tiles',()=>{
- for(let i=0;i<4;i++)assert.match(announcement({type:'discard',seat:i,tile:4},0),new RegExp(['您','下家','对家','上家'][i]+'，打出五万'));
+ const players=['妈妈','小津','爸爸','海河'].map(name=>({name}));
+ for(let i=0;i<4;i++)assert.match(announcement({type:'discard',seat:i,tile:4},players),new RegExp(players[i].name+'，打出五万'));
+ assert.equal(announcement({type:'discard',seat:3,tile:4},[{},{},{},{name:'电脑·海河'}]),'海河，打出五万。');
+ assert.equal(announcement({type:'discard',seat:2,tile:4}), '家人，打出五万。');
  assert.equal(spokenTile(33),'白板');assert.equal(spokenTile(31),'红中');
- for(const type of ['pong','kong','addedKong','hiddenKong','win'])assert.ok(announcement({type,seat:1,tile:type==='win'?undefined:3},0));
- assert.equal(announcement({type:'privateDraw',seat:1,tile:3},0),'');
+ for(const type of ['pong','kong','addedKong','hiddenKong','win'])assert.ok(announcement({type,seat:1,tile:type==='win'?undefined:3},players));
+ assert.equal(announcement({type:'privateDraw',seat:1,tile:3},players),'');
 });
 test('event cursor never replays snapshots, duplicates or another room history',()=>{
  const c=new EventCursor();assert.deepEqual(c.read('a',[{id:2}]),[]);

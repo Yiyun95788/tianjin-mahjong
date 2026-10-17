@@ -32,3 +32,13 @@ test('draw retains kong points and changes dealer when only others have a kong',
  g.players.forEach(p=>{p.hand=[0,1,2];p.melds=[];});g.players[0].hand.push(30);g.players[1].melds=[{kind:'hiddenKong',tile:28}];g.players[1].score=6;g.players[0].score=g.players[2].score=g.players[3].score=-2;
  act(g,0,{type:'discard',tile:30});assert.equal(g.phase,'ended');assert.equal(g.nextDealer,1);assert.deepEqual(g.players.map(p=>p.score),[-2,6,-2,-2]);
 });
+
+test('bot decisions do not depend on opponents concealed hands or wall order',()=>{
+ for(let k=0;k<20;k++){
+  const g=setup(),seat=g.turn;
+  const expected=botAction(g,seat),changed=structuredClone(g);
+  changed.wall.reverse();changed.supplement.reverse();
+  changed.players.forEach((p,i)=>{if(i!==seat)p.hand=Array(13).fill((k+i)%34);});
+  assert.deepEqual(botAction(changed,seat),expected);
+ }
+});

@@ -3,7 +3,7 @@ import {nextTile,scoreHand,chooseDiscard,tileName} from './rules.js';
 
 const sort = h => h.sort((a,b)=>a-b);
 export function newGame() {
-  return {phase:'lobby',players:Array.from({length:4},(_,i)=>({name:['电脑·津门','电脑·小津','电脑·老卫','电脑·海河'][i],human:false,auto:false,hand:[],melds:[],river:[],score:0})),dealer:0,round:0,revision:0,log:[],bets:[null,null,null,null]};
+  return {phase:'lobby',players:Array.from({length:4},(_,i)=>({name:['津门','小津','家人','海河'][i],human:false,auto:false,hand:[],melds:[],river:[],score:0})),dealer:0,round:0,revision:0,log:[],bets:[null,null,null,null]};
 }
 const note = (g,s) => { g.log.push(s); g.log = g.log.slice(-30); };
 const announce = (g,type,seat,tile) => {
@@ -153,6 +153,6 @@ export function view(g,seat) {
   return {...g,wall:undefined,supplement:undefined,remaining:g.wall?.length??0,reserve:g.supplement?.length??0,
     drawn:g.turn===seat?g.drawn:undefined,
     pending:g.pending?{from:g.pending.from,tile:g.pending.tile}:null,
-    players:g.players.map((p,i)=>({...p,hand:i===seat||g.phase==='ended'?p.hand:undefined,count:p.hand.length})),
+    players:g.players.map((p,i)=>({...p,name:p.human?p.name:p.name.replace(/^电脑·/,''),hand:i===seat||g.phase==='ended'?p.hand:undefined,count:p.hand.length})),
     seat,actions:actionsFor(g,seat),win:winFor(g,seat)};
 }

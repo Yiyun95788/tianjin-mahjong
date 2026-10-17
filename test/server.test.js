@@ -23,6 +23,11 @@ async function client(port){
 test('two private seats, server authorization, reconnect and disk recovery',{timeout:20000},async(t)=>{
  const dir=await mkdtemp(path.join(tmpdir(),'tjmj-test-'));let server=await boot(dir);const sockets=[];
  t.after(async()=>{for(const ws of sockets)ws.terminate();server.proc.kill();await rm(dir,{recursive:true,force:true});});
+ for(let tile=0;tile<34;tile++){
+  const asset=await fetch(`http://127.0.0.1:${server.port}/tiles/${tile}.svg`);
+  assert.equal(asset.status,200);assert.equal(asset.headers.get('content-type'),'image/svg+xml');assert.match(await asset.text(),/<svg/);
+ }
+ assert.equal((await fetch(`http://127.0.0.1:${server.port}/tiles/34.svg`)).status,404);
  const a=await client(server.port);sockets.push(a.ws);a.send({type:'create',name:'爸爸'});
  const auth=await a.next('joined');let state=await a.next('state');
  assert.equal(state.seat,0);assert.equal(state.players[0].name,'爸爸');
