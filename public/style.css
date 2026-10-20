@@ -347,3 +347,6 @@ header{height:42px;padding:0 max(14px,env(safe-area-inset-left));border:0}
  .claim-actions{gap:10px;padding:10px;top:43%}
  .claim-actions button{min-width:80px;min-height:58px;font-size:25px;padding:10px 18px}
 }
+
+.header-right .exit-game{background:#b63f32;color:#fff;border:1px solid #ffd3bf;border-radius:7px;font-weight:700;font-size:14px;min-height:36px;padding:6px 12px;white-space:nowrap}
+@media(max-height:360px) and (orientation:landscape),(max-width:360px) and (orientation:portrait){.header-right .exit-game{min-height:26px;font-size:12px;padding:3px 8px}.header-right .connection{display:none}}

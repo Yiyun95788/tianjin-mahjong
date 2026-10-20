@@ -53,3 +53,11 @@ test('bot never discards a wildcard and chooses a legal tile',()=>{
  const hand=[0,1,2,9,10,11,18,19,20,27,27,32,33,30];
  const t=chooseDiscard(hand,[32,33],[]);assert.ok(hand.includes(t));assert.ok(![32,33].includes(t));
 });
+
+test('casual selection sometimes takes a weaker alternative without discarding wilds',()=>{
+ const hand=[0,1,2,3,5,7,9,10,13,18,20,27,28,30],wilds=[32,33];
+ const best=chooseDiscard(hand,wilds,[]);
+ assert.equal(chooseDiscard(hand,wilds,[],[],{casual:true,rng:()=>0.9}),best);
+ const relaxed=chooseDiscard(hand,wilds,[],[],{casual:true,rng:()=>0});
+ assert.notEqual(relaxed,best);assert.ok(hand.includes(relaxed));assert.ok(!wilds.includes(relaxed));
+});

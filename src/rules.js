@@ -105,10 +105,11 @@ export function scoreHand({hand, wilds, melds = [], drawn, kongDraw = false, hea
 
 // Bot receives only its own hand plus public discards/melds. It optimizes
 // immediate legal winning outs, then local shape and progress toward a dragon.
-export function chooseDiscard(hand,wilds,melds,visible = []) {
+export function chooseDiscard(hand,wilds,melds,visible = [],{casual=false,rng=Math.random}={}) {
   const c = countsOf(hand), seen = countsOf([...hand,...visible]);
   const choices = [...new Set(hand)].filter(t => !wilds.includes(t));
   let best = choices[0], value = -Infinity;
+  const ranked=[];
   for (const t of choices) {
     const rest = [...hand]; rest.splice(rest.indexOf(t),1);
     let outs = 0;
@@ -129,7 +130,12 @@ export function chooseDiscard(hand,wilds,melds,visible = []) {
     const distinct = [0,1,2].map(s => n.slice(s*9,s*9+9).filter(Boolean).length);
     shape += Math.max(...distinct) * 0.6;
     const score = outs + shape + (seen[t]>=3 ? 0.3 : 0) - (c[t]>=3 ? 0.2 : 0);
+    ranked.push({tile:t,score});
     if (score>value) {value=score;best=t;}
+  }
+  if(casual&&rng()<0.25){
+    const alternatives=ranked.filter(x=>x.tile!==best&&x.score>=value-6).sort((a,b)=>b.score-a.score).slice(0,2);
+    if(alternatives.length)return alternatives[Math.min(alternatives.length-1,Math.floor(rng()*alternatives.length))].tile;
   }
   return best;
 }

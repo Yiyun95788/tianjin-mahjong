@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {newGame,begin,act,view,actionsFor,botAction} from '../src/game.js';
+import {newGame,begin,act,view,actionsFor,botAction,leave} from '../src/game.js';
 const setup=()=>{const g=newGame();begin(g);return g;};
 function conserved(g){const all=[...g.wall,...g.supplement,g.indicator,...g.players.flatMap(p=>[...p.hand,...p.river,...p.melds.flatMap(m=>Array(m.kind==='pong'?3:4).fill(m.tile))])];assert.equal(all.length,136);for(let t=0;t<34;t++)assert.equal(all.filter(x=>x===t).length,4);assert.equal(g.players.reduce((s,p)=>s+p.score,0),0);}
 test('deal conserves all tiles and hides opponents and wall',()=>{const g=setup();conserved(g);const v=view(g,0);assert.equal(v.wall,undefined);assert.equal(v.supplement,undefined);assert.equal(v.players[1].hand,undefined);assert.equal(g.players[g.dealer].hand.length,14);assert.equal(g.players[(g.dealer+1)%4].hand.length,13);});
@@ -36,9 +36,22 @@ test('draw retains kong points and changes dealer when only others have a kong',
 test('bot decisions do not depend on opponents concealed hands or wall order',()=>{
  for(let k=0;k<20;k++){
   const g=setup(),seat=g.turn;
-  const expected=botAction(g,seat),changed=structuredClone(g);
+  const expected=botAction(g,seat,()=>0.1),changed=structuredClone(g);
   changed.wall.reverse();changed.supplement.reverse();
   changed.players.forEach((p,i)=>{if(i!==seat)p.hand=Array(13).fill((k+i)%34);});
-  assert.deepEqual(botAction(changed,seat),expected);
+  assert.deepEqual(botAction(changed,seat,()=>0.1),expected);
  }
+});
+
+test('either human can close a room without settling an unfinished hand',()=>{
+ for(const seat of [0,2]){const g=setup();g.players[seat].human=true;const scores=g.players.map(p=>p.score);leave(g,seat);
+ assert.equal(g.phase,'closed');assert.equal(g.closedBy,seat);assert.equal(g.pending,null);assert.deepEqual(g.players.map(p=>p.score),scores);
+ for(let i=0;i<4;i++){assert.deepEqual(actionsFor(g,i),[]);assert.equal(botAction(g,i),null);}
+ assert.throws(()=>begin(g));assert.throws(()=>act(g,seat,{type:'auto',value:true}));leave(g,seat);
+ }
+});
+test('casual bots sometimes pass a claim while human auto retains its strategy',()=>{
+ const g=setup();g.pending={from:0,tile:3,eligible:[1],answers:{}};g.players[1].hand=[3,3,3];
+ assert.equal(botAction(g,1,()=>0.1).type,'pass');assert.equal(botAction(g,1,()=>0.9).type,'kong');
+ g.players[1].human=true;assert.equal(botAction(g,1,()=>0.1).type,'kong');
 });

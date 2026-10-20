@@ -4,7 +4,7 @@ import {randomBytes,randomInt} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 import {WebSocketServer,WebSocket} from 'ws';
-import {newGame,begin,act,view,botAction} from './game.js';
+import {newGame,begin,act,view,botAction,leave} from './game.js';
 import {NarrationGate} from './pacing.js';
 
 const root=fileURLToPath(new URL('../public/',import.meta.url));
@@ -95,6 +95,10 @@ wss.on('connection',ws=>{
         }
         if(m.type==='spoken'){
           if(gates.get(r.code)?.acknowledge(ws,m.eventId)){clearBotTimer(r);schedule(r);}return;
+        }
+        if(m.type==='leave'){
+          leave(r.game,c.seat);clearBotTimer(r);gates.delete(r.code);
+          r.game.revision++;await save(r);publish(r);return;
         }
         if(m.type==='sync'){publish(r);return;}
         if(m.revision!==r.game.revision){publish(r);throw Error('牌局已更新，请再操作一次');}

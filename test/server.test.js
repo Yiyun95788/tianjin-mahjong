@@ -48,4 +48,15 @@ test('two private seats, server authorization, reconnect and disk recovery',{tim
  server=await boot(dir);
  const recovered=await client(server.port);sockets.push(recovered.ws);recovered.send({type:'resume',code:auth.code,token:auth.token});await recovered.next('joined');const restored=await recovered.next('state');
  assert.equal(restored.seat,0);assert.equal(restored.players[2].name,'妈妈');assert.notEqual(restored.phase,'lobby');
+ const guest=await client(server.port);sockets.push(guest.ws);guest.send({type:'resume',code:auth.code,token:authB.token});await guest.next('joined');await guest.next('state');
+ // Leaving is authenticated but deliberately ignores stale revisions.
+ guest.send({type:'leave',revision:-1});
+ let closed;do{closed=await recovered.next('state');}while(closed.phase!=='closed');
+ let guestClosed;do{guestClosed=await guest.next('state');}while(guestClosed.phase!=='closed');
+ assert.equal(closed.closedBy,2);assert.equal(guestClosed.closedBy,2);assert.deepEqual(closed.actions,[]);
+ recovered.send({type:'start',revision:closed.revision});assert.match((await recovered.next('error')).message,/重新开桌/);
+ await new Promise(resolve=>{server.proc.once('exit',resolve);server.proc.kill();});server=await boot(dir);
+ const closedResume=await client(server.port);sockets.push(closedResume.ws);closedResume.send({type:'resume',code:auth.code,token:auth.token});await closedResume.next('joined');
+ assert.equal((await closedResume.next('state')).phase,'closed');
+
 });

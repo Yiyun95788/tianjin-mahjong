@@ -10,7 +10,16 @@ const announce = (g,type,seat,tile) => {
   g.eventId=(g.eventId||0)+1;
   g.events=[...(g.events||[]),{id:g.eventId,type,seat,...(tile===undefined?{}:{tile})}].slice(-24);
 };
+export function leave(g,seat){
+  if(!g.players[seat]?.human)throw Error('只有真人玩家可以结束牌局');
+  if(g.phase==='closed')return;
+  g.phase='closed';g.pending=null;g.drawn=null;g.closedBy=seat;
+  g.players.forEach(p=>p.auto=false);
+  note(g,`${g.players[seat].name}退出，牌局结束`);
+  announce(g,'leave',seat);
+}
 export function begin(g) {
+  if(g.phase==='closed')throw Error('牌局已结束，请重新开桌');
   if (!['lobby','ended'].includes(g.phase)) throw Error('这一局还没有结束');
   if (g.round) g.dealer = g.nextDealer;
   else g.dealer = randomInt(4);
@@ -114,6 +123,7 @@ function resolve(g) {
   if(kong){kongPay(g,seat,false);draw(g,seat,true);}
 }
 export function act(g,seat,a) {
+  if(g.phase==='closed')throw Error('牌局已结束，请重新开桌');
   if(a.type==='auto') {g.players[seat].auto=!!a.value;if(g.phase==='bets')autoBets(g);return;}
   const legal=actionsFor(g,seat).some(x=>x.type===a.type&&(x.tile===undefined||x.tile===a.tile)&&(x.value===undefined||x.value===a.value));
   if(!legal)throw Error('现在不能执行这个操作，请等待牌局更新');
@@ -135,9 +145,11 @@ export function act(g,seat,a) {
   if(eligible.length)g.pending={from:seat,tile:a.tile,eligible,answers:{}};
   else draw(g,(seat+1)%4);
 }
-export function botAction(g,seat) {
+export function botAction(g,seat,rng=Math.random) {
   const actions=actionsFor(g,seat);if(!actions.length)return null;
   const win=actions.find(a=>a.type==='win');if(win)return win;
+  const casual=!g.players[seat].human;
+  if(casual&&g.pending&&rng()<0.2)return {type:'pass'};
   const kong=actions.find(a=>a.type==='kong');if(kong)return kong;
   if(g.pending){
     const p=g.players[seat],t=g.pending.tile;
@@ -147,7 +159,7 @@ export function botAction(g,seat) {
   }
   if(g.phase==='bets')return {type:'bet',value:0};
   const visible=g.players.flatMap(p=>[...p.river,...p.melds.flatMap(m=>Array(m.kind==='pong'?3:4).fill(m.tile))]);
-  return {type:'discard',tile:chooseDiscard(g.players[seat].hand,g.wilds,g.players[seat].melds,visible)};
+  return {type:'discard',tile:chooseDiscard(g.players[seat].hand,g.wilds,g.players[seat].melds,visible,{casual,rng})};
 }
 export function view(g,seat) {
   return {...g,wall:undefined,supplement:undefined,remaining:g.wall?.length??0,reserve:g.supplement?.length??0,
