@@ -1,17 +1,18 @@
 import http from 'node:http';
 import {readFile,mkdir,writeFile,rename,readdir} from 'node:fs/promises';
-import {randomBytes,randomInt} from 'node:crypto';
+import {randomBytes} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 import {WebSocketServer,WebSocket} from 'ws';
 import {newGame,begin,act,view,botAction,leave} from './game.js';
 import {NarrationGate} from './pacing.js';
+import {newRoomCode,normalizeRoomCode,isRoomCode} from './room-code.js';
 
 const root=fileURLToPath(new URL('../public/',import.meta.url));
 const data=process.env.DATA_DIR||fileURLToPath(new URL('../.data/',import.meta.url));
 const rooms=new Map(), clients=new Map(), timers=new Map(), gates=new Map();
 await mkdir(data,{recursive:true});
-for(const file of await readdir(data))if(/^\d{6}\.json$/.test(file)) {
+for(const file of await readdir(data))if(/^[a-z]+(?:-[a-z]+){2}\.json$/.test(file)) {
   try {const room=JSON.parse(await readFile(path.join(data,file),'utf8'));if(Date.now()-room.updated<7*86400000)rooms.set(room.code,room);}
   catch {console.error(`Could not restore room ${file}`);}
 }
@@ -72,10 +73,11 @@ wss.on('connection',ws=>{
           let r,seat,token;
           if(m.type==='create'){
             if(rooms.size>=1000)throw Error('房间已满，请稍后再试');
-            let code;do{code=String(randomInt(100000,1000000));}while(rooms.has(code));
+            let code;do{code=newRoomCode();}while(rooms.has(code));
             r={code,game:newGame(),members:[null,null,null,null],updated:Date.now()};seat=0;rooms.set(code,r);
           }else{
-            r=rooms.get(String(m.code));if(!r)throw Error('没有找到房间，请检查六位房间号');
+            const code=normalizeRoomCode(m.code);if(!isRoomCode(code))throw Error('房间号格式不正确，请输入三个单词的房间号');
+            r=rooms.get(code);if(!r)throw Error('没有找到房间，请检查房间号');
             if(m.type==='resume'){
               seat=r.members.findIndex(x=>x&&x.token===m.token);if(seat<0)throw Error('座位凭证已失效，请重新加入');token=m.token;
             }else{

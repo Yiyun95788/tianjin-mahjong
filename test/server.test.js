@@ -29,7 +29,7 @@ test('two private seats, server authorization, reconnect and disk recovery',{tim
  }
  assert.equal((await fetch(`http://127.0.0.1:${server.port}/tiles/34.svg`)).status,404);
  const a=await client(server.port);sockets.push(a.ws);a.send({type:'create',name:'爸爸'});
- const auth=await a.next('joined');let state=await a.next('state');
+ const auth=await a.next('joined');assert.match(auth.code,/^[a-z]+(-[a-z]+){2}$/);let state=await a.next('state');
  assert.equal(state.seat,0);assert.equal(state.players[0].name,'爸爸');
  const b=await client(server.port);sockets.push(b.ws);b.send({type:'join',code:auth.code,name:'妈妈'});
  const authB=await b.next('joined');const bState=await b.next('state');assert.equal(bState.seat,2);assert.equal(bState.players.filter(p=>p.human).length,2);
